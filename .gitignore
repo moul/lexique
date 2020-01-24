@@ -1,3 +1,5 @@
+*.tsv
+
 # Temporary files
 *~
 *#
