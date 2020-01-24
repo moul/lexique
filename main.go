@@ -1,15 +1,76 @@
 package main
 
 import (
+	"context"
 	"encoding/csv"
+	"flag"
 	"fmt"
+	"log"
+	"math/rand"
 	"os"
+	"time"
+
+	"github.com/peterbourgon/ff/v2/ffcli"
 )
 
 func main() {
-	err := generate()
-	if err != nil {
-		panic(err)
+	rand.Seed(time.Now().UnixNano())
+	var (
+		rootFlagSet = flag.NewFlagSet("lexique", flag.ExitOnError)
+		nthFlagSet  = flag.NewFlagSet("textctl repeat", flag.ExitOnError)
+		nthN        = nthFlagSet.Int("n", 0, "nth")
+	)
+
+	nth := &ffcli.Command{
+		Name:       "nth",
+		ShortUsage: "lexique ntx [-n POS]",
+		FlagSet:    nthFlagSet,
+		Exec: func(_ context.Context, args []string) error {
+			lexique, err := parseLexique()
+			if err != nil {
+				return err
+			}
+			picked := lexique[*nthN]
+			fmt.Println(picked.Ortho)
+			return nil
+		},
+	}
+
+	random := &ffcli.Command{
+		Name:       "random",
+		ShortUsage: "lexique random",
+		Exec: func(_ context.Context, args []string) error {
+			lexique, err := parseLexique()
+			if err != nil {
+				return err
+			}
+			picked := lexique[rand.Intn(len(lexique))]
+			fmt.Println(picked.Ortho)
+			return nil
+		},
+	}
+
+	stats := &ffcli.Command{
+		Name:       "stats",
+		ShortUsage: "lexique stats",
+		Exec: func(_ context.Context, args []string) error {
+			lexique, err := parseLexique()
+			if err != nil {
+				return err
+			}
+			fmt.Println("total:", len(lexique))
+			return nil
+		},
+	}
+
+	root := &ffcli.Command{
+		ShortUsage:  "lexique [flags] <subcommand>",
+		FlagSet:     rootFlagSet,
+		Subcommands: []*ffcli.Command{nth, random, stats},
+	}
+
+	if err := root.ParseAndRun(context.Background(), os.Args[1:]); err != nil {
+		log.Fatal(err)
 	}
 }
 
@@ -52,10 +113,10 @@ type Entry struct {
 	Nbmorph       string
 }
 
-func generate() error {
+func parseLexique() ([]Entry, error) {
 	f, err := os.Open("./lexique.tsv")
 	if err != nil {
-		return err
+		return nil, err
 	}
 	defer f.Close()
 
@@ -64,7 +125,7 @@ func generate() error {
 	reader.FieldsPerRecord = -1
 	lines, err := reader.ReadAll()
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	entries := make([]Entry, len(lines)-1)
@@ -108,8 +169,5 @@ func generate() error {
 		}
 		entries[i] = entry
 	}
-
-	fmt.Println(len(entries))
-
-	return nil
+	return entries, nil
 }
