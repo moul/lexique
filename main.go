@@ -8,9 +8,11 @@ import (
 	"log"
 	"math/rand"
 	"os"
+	"strconv"
 	"time"
 
 	"github.com/peterbourgon/ff/v2/ffcli"
+	"moul.io/godev"
 )
 
 func main() {
@@ -40,12 +42,13 @@ func main() {
 		Name:       "random",
 		ShortUsage: "lexique random",
 		Exec: func(_ context.Context, args []string) error {
-			lexique, err := parseLexique()
+			lines, err := readLines()
 			if err != nil {
 				return err
 			}
-			picked := lexique[rand.Intn(len(lexique))]
-			fmt.Println(picked.Ortho)
+			picked := lines[rand.Intn(len(lines))]
+			entry := parseEntry(picked)
+			fmt.Println(entry.Ortho)
 			return nil
 		},
 	}
@@ -63,10 +66,23 @@ func main() {
 		},
 	}
 
+	dump := &ffcli.Command{
+		Name:       "dump",
+		ShortUsage: "lexique dump",
+		Exec: func(_ context.Context, args []string) error {
+			lexique, err := parseLexique()
+			if err != nil {
+				return err
+			}
+			fmt.Println(godev.PrettyJSON(lexique))
+			return nil
+		},
+	}
+
 	root := &ffcli.Command{
 		ShortUsage:  "lexique [flags] <subcommand>",
 		FlagSet:     rootFlagSet,
-		Subcommands: []*ffcli.Command{nth, random, stats},
+		Subcommands: []*ffcli.Command{nth, random, stats, dump},
 	}
 
 	if err := root.ParseAndRun(context.Background(), os.Args[1:]); err != nil {
@@ -82,38 +98,78 @@ type Entry struct {
 	Cgram         string
 	Genre         string
 	Nombre        string
-	Freqlemfilms2 string
-	Freqlemlivres string
-	Freqfilms2    string
-	Freqlivres    string
+	Freqlemfilms2 float64
+	Freqlemlivres float64
+	Freqfilms2    float64
+	Freqlivres    float64
 	Infover       string
-	Nbhomogr      string
-	Nbhomoph      string
-	Islem         string
-	Nblettres     string
-	Nbphons       string
+	Nbhomogr      int
+	Nbhomoph      int
+	Islem         bool
+	Nblettres     int
+	Nbphons       int
 	Cvcv          string
 	PCvcv         string
-	Voisorth      string
-	Voisphon      string
-	Puorth        string
-	Puphon        string
+	Voisorth      int
+	Voisphon      int
+	Puorth        int
+	Puphon        int
 	Syll          string
-	Nbsyll        string
+	Nbsyll        int
 	CvCv          string
 	Orthrenv      string
 	Phonrenv      string
 	Orthosyll     string
 	Cgramortho    string
-	Deflem        string
-	Defobs        string
-	Old20         string
-	Pld20         string
+	Deflem        int
+	Defobs        int
+	Old20         float64
+	Pld20         float64
 	Morphoder     string
-	Nbmorph       string
+	Nbmorph       int
 }
 
-func parseLexique() ([]Entry, error) {
+func parseEntry(line []string) Entry {
+	return Entry{
+		Ortho:         line[0],
+		Phon:          line[1],
+		Lemme:         line[2],
+		Cgram:         line[3],
+		Genre:         line[4],
+		Nombre:        line[5],
+		Freqlemfilms2: parseFloat(line[6]),
+		Freqlemlivres: parseFloat(line[7]),
+		Freqfilms2:    parseFloat(line[8]),
+		Freqlivres:    parseFloat(line[9]),
+		Infover:       line[10],
+		Nbhomogr:      parseInt(line[11]),
+		Nbhomoph:      parseInt(line[12]),
+		Islem:         parseBool(line[13]),
+		Nblettres:     parseInt(line[14]),
+		Nbphons:       parseInt(line[15]),
+		Cvcv:          line[16],
+		PCvcv:         line[17],
+		Voisorth:      parseInt(line[18]),
+		Voisphon:      parseInt(line[19]),
+		Puorth:        parseInt(line[20]),
+		Puphon:        parseInt(line[21]),
+		Syll:          line[22],
+		Nbsyll:        parseInt(line[23]),
+		CvCv:          line[24],
+		Orthrenv:      line[25],
+		Phonrenv:      line[26],
+		Orthosyll:     line[27],
+		Cgramortho:    line[28],
+		Deflem:        parseInt(line[29]),
+		Defobs:        parseInt(line[30]),
+		Old20:         parseFloat(line[31]),
+		Pld20:         parseFloat(line[32]),
+		Morphoder:     line[33],
+		Nbmorph:       parseInt(line[34]),
+	}
+}
+
+func readLines() ([][]string, error) {
 	f, err := os.Open("./lexique.tsv")
 	if err != nil {
 		return nil, err
@@ -123,51 +179,39 @@ func parseLexique() ([]Entry, error) {
 	reader := csv.NewReader(f)
 	reader.Comma = '\t'
 	reader.FieldsPerRecord = -1
-	lines, err := reader.ReadAll()
+	return reader.ReadAll()
+}
+
+func parseLexique() ([]Entry, error) {
+	lines, err := readLines()
 	if err != nil {
 		return nil, err
 	}
 
 	entries := make([]Entry, len(lines)-1)
 	for i, line := range lines[1:] {
-		entry := Entry{
-			Ortho:         line[0],
-			Phon:          line[1],
-			Lemme:         line[2],
-			Cgram:         line[3],
-			Genre:         line[4],
-			Nombre:        line[5],
-			Freqlemfilms2: line[6],
-			Freqlemlivres: line[7],
-			Freqfilms2:    line[8],
-			Freqlivres:    line[9],
-			Infover:       line[10],
-			Nbhomogr:      line[11],
-			Nbhomoph:      line[12],
-			Islem:         line[13],
-			Nblettres:     line[14],
-			Nbphons:       line[15],
-			Cvcv:          line[16],
-			PCvcv:         line[17],
-			Voisorth:      line[18],
-			Voisphon:      line[19],
-			Puorth:        line[20],
-			Puphon:        line[21],
-			Syll:          line[22],
-			Nbsyll:        line[23],
-			CvCv:          line[24],
-			Orthrenv:      line[25],
-			Phonrenv:      line[26],
-			Orthosyll:     line[27],
-			Cgramortho:    line[28],
-			Deflem:        line[29],
-			Defobs:        line[30],
-			Old20:         line[31],
-			Pld20:         line[32],
-			Morphoder:     line[33],
-			Nbmorph:       line[34],
-		}
+		entry := parseEntry(line)
 		entries[i] = entry
 	}
 	return entries, nil
+}
+
+func parseBool(input string) bool {
+	return input == "1"
+}
+
+func parseInt(input string) int {
+	out, err := strconv.Atoi(input)
+	if err != nil {
+		return -1
+	}
+	return out
+}
+
+func parseFloat(input string) float64 {
+	out, err := strconv.ParseFloat(input, 64)
+	if err != nil {
+		return -1
+	}
+	return out
 }
