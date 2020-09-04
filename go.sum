@@ -23,3 +23,5 @@ moul.io/godev v1.4.0 h1:hEUzBIrRtBRWqZHmp12bFUlLSyKxpvfcMYa3Pipfng8=
 moul.io/godev v1.4.0/go.mod h1:xsV3hXF1E9vy2T/1b1CLjSImJ1/nQeTfqTDhJHhJCWg=
 moul.io/godev v1.6.0 h1:ms1aI6o9k+PhmMdTR7Aw5iDHPu56xtnmrUgdfLKPspc=
 moul.io/godev v1.6.0/go.mod h1:5lgSpI1oH7xWpLl2Ew/Nsgk8DiNM6FzN9WV9+lgW8RQ=
+moul.io/godev v1.7.0 h1:PgnL7BsCQPPjKwu9V0oxIVm2MyZAHAN2sl0S3+E37U0=
+moul.io/godev v1.7.0/go.mod h1:5lgSpI1oH7xWpLl2Ew/Nsgk8DiNM6FzN9WV9+lgW8RQ=
